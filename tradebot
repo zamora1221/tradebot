@@ -7,13 +7,11 @@ using NinjaTrader.NinjaScript;
 using System.Windows.Media;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-
-
-
 #endregion
+
 namespace NinjaTrader.NinjaScript.Strategies
 {
-    public class onecontract20200 : Strategy
+    public class onecontractlater : Strategy
     {
         private double upperRange;
         private double lowerRange;
@@ -55,7 +53,7 @@ namespace NinjaTrader.NinjaScript.Strategies
             if (State == State.SetDefaults)
             {
                 Description = @"Enter the description for your new custom Strategy here.";
-                Name = "onecontract20150";
+                Name = "onecontractlater";
 
                 Calculate = Calculate.OnBarClose;
                 EntriesPerDirection = 3;
@@ -77,13 +75,14 @@ namespace NinjaTrader.NinjaScript.Strategies
             }
             else if (State == State.DataLoaded)
             {
-                // When the data is loaded, initialize lowerRange to the low of the first bar.
-                lowerRange = Low[0];
+                // When the data is loaded, initialize lowerRange and upperRange to the first bar's high and low
+                lowerRange = High[0];
+                upperRange = Low[0];
             }
             else if (State == State.Configure)
             {
                 /* Set the Stop Loss Order */
-                AddDataSeries(NinjaTrader.Data.BarsPeriodType.Minute, 5);
+                AddDataSeries(NinjaTrader.Data.BarsPeriodType.Minute, 15);
                 upperRange = double.MinValue;
                 lowerRange = double.MaxValue;
             }
@@ -92,36 +91,35 @@ namespace NinjaTrader.NinjaScript.Strategies
         private bool tradeTakenSinceReturn = false;
 
         protected override void OnBarUpdate()
-{
-    if (CurrentBars[0] == 0 || BarsArray[0].IsFirstBarOfSession)
-    {
-        upperRange = double.MinValue;
-        lowerRange = double.MaxValue;
-        priceOutsideRange = false;
-        tradeTakenSinceReturn = false;
-		
-		RemoveDrawObject("upperRangeLine");
-        RemoveDrawObject("lowerRangeLine");
+        {
+            if (CurrentBars[0] == 0 || BarsArray[0].IsFirstBarOfSession)
+            {
+                // Reset the range at the start of a new session
+                upperRange = double.MinValue;
+                lowerRange = double.MaxValue;
+                priceOutsideRange = false;
+                tradeTakenSinceReturn = false;
+				
+				RemoveDrawObject("upperRangeLine");
+        		RemoveDrawObject("lowerRangeLine");
+            }
 
-    }
+            if (ToTime(Time[0]) >= 94500 && ToTime(Time[0]) <= 104500)
+            {
+                // Update the range based on the highest high and lowest low
+                upperRange = Math.Max(upperRange, High[0]);
+                lowerRange = Math.Min(lowerRange, Low[0]);
+				
+				NinjaTrader.NinjaScript.DrawingTools.Draw.HorizontalLine(this, "upperRangeLine", upperRange, Brushes.Red);
+        		NinjaTrader.NinjaScript.DrawingTools.Draw.HorizontalLine(this, "lowerRangeLine", lowerRange, Brushes.Green);
+            }
 
-    if (ToTime(Time[0]) == 93000)
-    {
-        upperRange = High[0];
-        lowerRange = Low[0];
-		
-		NinjaTrader.NinjaScript.DrawingTools.Draw.HorizontalLine(this, "upperRangeLine", upperRange, Brushes.Red);
-        NinjaTrader.NinjaScript.DrawingTools.Draw.HorizontalLine(this, "lowerRangeLine", lowerRange, Brushes.Green);
-
-    }
-
-            if (ToTime(Time[0]) > 93000 && ToTime(Time[0]) <= 103000)
+            if (ToTime(Time[0]) >= 104500 && ToTime(Time[0]) <= 160000)
             {
                 if (Close[0] > lowerRange && Close[0] < upperRange)
                 {
                     priceOutsideRange = false;
                     tradeTakenSinceReturn = false;
-					
                 }
 
                 if (!priceOutsideRange && !tradeTakenSinceReturn && Close[0] > upperRange)
@@ -147,14 +145,12 @@ namespace NinjaTrader.NinjaScript.Strategies
         {
             if (execution.Order.OrderAction == OrderAction.Buy)
             {
-                // Removed setting the range
                 // Set stop loss at the lower end of the range
                 SetStopLoss(CalculationMode.Ticks, stopLossTicks);
             }
 
             if (execution.Order.OrderAction == OrderAction.SellShort)
             {
-                // Removed setting the range
                 // Set stop loss at the upper end of the range
                 SetStopLoss(CalculationMode.Ticks, stopLossTicks);
             }
