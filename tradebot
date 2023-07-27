@@ -92,20 +92,28 @@ namespace NinjaTrader.NinjaScript.Strategies
         private bool tradeTakenSinceReturn = false;
 
         protected override void OnBarUpdate()
-        {
-            if (CurrentBars[0] == 0 || BarsArray[0].IsFirstBarOfSession)
-            {
-                upperRange = double.MinValue;
-                lowerRange = double.MaxValue;
-                priceOutsideRange = false;
-                tradeTakenSinceReturn = false;
-            }
+{
+    if (CurrentBars[0] == 0 || BarsArray[0].IsFirstBarOfSession)
+    {
+        upperRange = double.MinValue;
+        lowerRange = double.MaxValue;
+        priceOutsideRange = false;
+        tradeTakenSinceReturn = false;
+		
+		RemoveDrawObject("upperRangeLine");
+        RemoveDrawObject("lowerRangeLine");
 
-            if (ToTime(Time[0]) == 93000)
-            {
-                upperRange = High[0];
-                lowerRange = Low[0];
-            }
+    }
+
+    if (ToTime(Time[0]) == 93000)
+    {
+        upperRange = High[0];
+        lowerRange = Low[0];
+		
+		NinjaTrader.NinjaScript.DrawingTools.Draw.HorizontalLine(this, "upperRangeLine", upperRange, Brushes.Red);
+        NinjaTrader.NinjaScript.DrawingTools.Draw.HorizontalLine(this, "lowerRangeLine", lowerRange, Brushes.Green);
+
+    }
 
             if (ToTime(Time[0]) > 93000 && ToTime(Time[0]) <= 103000)
             {
@@ -113,6 +121,7 @@ namespace NinjaTrader.NinjaScript.Strategies
                 {
                     priceOutsideRange = false;
                     tradeTakenSinceReturn = false;
+					
                 }
 
                 if (!priceOutsideRange && !tradeTakenSinceReturn && Close[0] > upperRange)
